@@ -12,8 +12,7 @@ This repository contains a step-by-step guide for creating a notification manage
 - [Step 3: Implement the Drivers](#step-3-implement-the-drivers)
 - [Step 4: Register the Manager in the Service Container](#step-4-register-the-manager-in-the-service-container)
 - [Step 5: Test the System](#step-5-test-the-system)
-- [Best Practices](#best-practices)
-- [Conclusion](#conclusion)
+
 
 ---
 
@@ -132,3 +131,83 @@ SmsNotifier
 This class sends SMS messages via an external API.
 
 Create app/Notification/SmsNotifier.php:
+
+```php
+<?php
+
+namespace App\Notification;
+
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+
+class SmsNotifier
+{
+    protected $config;
+
+    public function __construct()
+    {
+        $this->config = config('notification.drivers.sms');
+    }
+
+    public function send($message)
+    {
+        try {
+            $data = [
+                'phone' => $this->config['to_number'],
+                'senderid' => $this->config['sender_id'],
+                'message' => $message,
+            ];
+
+            $headers = [
+                'Authorization' => 'Bearer ' . $this->config['api_token'],
+                'Content-Type' => 'application/json',
+            ];
+
+            $response = Http::withHeaders($headers)->post($this->config['api_url'], $data);
+
+            if ($response->successful()) {
+                Log::info('SMS sent successfully: ' . $message);
+            } else {
+                Log::error('Failed to send SMS: ' . $response->status() . ' - ' . $response->body());
+            }
+        } catch (\Exception $e) {
+            Log::error('Error while sending SMS: ' . $e->getMessage());
+        }
+    }
+}
+```
+## Step 4: Register the Manager in the Service Container
+To make the NotificationManager available throughout your application, register it in the AppServiceProvider.
+
+Open app/Providers/AppServiceProvider.php and update the register method:
+
+
+```php
+$this->app->singleton('notification', function ($app) {
+    return new \App\Notification\NotificationManager($app);
+});
+```
+## Test the System
+Add test routes to verify that the notification system works.
+
+Update routes/web.php:
+
+```php
+use App\Notification\NotificationManager;
+
+Route::get('/send-email', function () {
+    app('notification')->driver('email')->send('This is a test email!');
+    return 'Email sent!';
+});
+
+Route::get('/send-sms', function () {
+    app('notification')->driver('sms')->send('This is a test SMS!');
+    return 'SMS sent!';
+});
+```
+Access these routes in your browser:
+
+/send-email
+/send-sms
+Check the logs (storage/logs/laravel.log) for confirmation.
+
