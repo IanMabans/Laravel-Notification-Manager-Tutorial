@@ -44,3 +44,91 @@ return [
         ],
     ],
 ];
+```
+Add the following to your .env file (It can vary)
+```
+NOTIFICATION_DEFAULT_DRIVER=email
+MAIL_FROM_ADDRESS=hello@example.com
+MAIL_TO_ADDRESS=recipient@example.com
+SMS_SENDER_ID=YourSenderId
+SMS_API_TOKEN=YourApiToken
+SMS_API_URL=https://api.yoursmsprovider.com/send
+SMS_TO_NUMBER=+0987654321
+
+```
+## Step 2: Create the Notification Manager
+The NotificationManager handles the creation and management of drivers (email, SMS, etc.) based on the configuration.
+
+Create a new file at app/Notification/NotificationManager.php
+
+```php
+<?php
+
+namespace App\Notification;
+
+use Illuminate\Support\Manager;
+
+class NotificationManager extends Manager
+{
+    public function createEmailDriver()
+    {
+        return new EmailNotifier();
+    }
+
+    public function createSmsDriver()
+    {
+        return new SmsNotifier();
+    }
+
+    public function getDefaultDriver()
+    {
+        return config('notification.default_driver');
+    }
+}
+```
+## Step 3: Implement the Drivers
+
+Now, let's create the EmailNotifier and SmsNotifier classes.
+
+EmailNotifier
+This class sends emails using Laravel's Mail facade.
+
+Create app/Notification/EmailNotifier.php:
+
+```php
+<?php
+
+namespace App\Notification;
+
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+
+class EmailNotifier
+{
+    protected $config;
+
+    public function __construct()
+    {
+        $this->config = config('notification.drivers.email');
+    }
+
+    public function send($message)
+    {
+        try {
+            Mail::send([], [], function ($mail) use ($message) {
+                $mail->to($this->config['to_address'])
+                    ->subject('Test Email')
+                    ->setBody("<html><body>$message</body></html>", 'text/html');
+            });
+
+            Log::info("Email sent successfully: {$message}");
+        } catch (\Exception $e) {
+            Log::error('Error while sending email: ' . $e->getMessage());
+        }
+    }
+}
+```
+SmsNotifier
+This class sends SMS messages via an external API.
+
+Create app/Notification/SmsNotifier.php:
