@@ -187,7 +187,7 @@ $this->app->singleton('notification', function ($app) {
     return new \App\Notification\NotificationManager($app);
 });
 ```
-## Test the System
+## Step 5: Test the System
 Add test routes to verify that the notification system works.
 
 Update routes/web.php:
