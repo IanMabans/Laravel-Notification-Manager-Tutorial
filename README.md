@@ -114,10 +114,9 @@ class EmailNotifier
     public function send($message)
     {
         try {
-            Mail::send([], [], function ($mail) use ($message) {
+            Mail::html("<html><body>$message</body></html>", function ($mail) {
                 $mail->to($this->config['to_address'])
-                    ->subject('Test Email')
-                    ->setBody("<html><body>$message</body></html>", 'text/html');
+                    ->subject('Test Email');
             });
 
             Log::info("Email sent successfully: {$message}");
